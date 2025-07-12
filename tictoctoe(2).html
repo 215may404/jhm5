@@ -478,11 +478,6 @@
                 return;
             }
 
-            // 在人机模式下，只有真人玩家才能点击操作
-            if (board[clickedCellIndex]!== '' ||!gameActive(isSinglePlayerMode === 'O')){
-                return;
-            }
-
             // 更新棋盘状态并显示玩家标记
             updateCell(clickedCell, clickedCellIndex);
             checkGameStatus(); // 检查游戏是否结束
