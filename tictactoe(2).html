@@ -482,12 +482,6 @@
             updateCell(clickedCell, clickedCellIndex);
             checkGameStatus(); // 检查游戏是否结束
 
-            // 如果是单人模式且游戏仍在进行且当前是电脑的回合
-            if (isSinglePlayerMode && gameActive && currentPlayer === 'O') {
-                setTimeout(handleComputerMove, 700); // 延迟电脑移动，增加用户体验
-            }
-        }
-
         // 更新单元格内容和样式
         function updateCell(cell, index) {
             board[index] = currentPlayer;
@@ -499,6 +493,10 @@
         function changePlayer() {
             currentPlayer = currentPlayer === 'X'?'O':'X';
             gameStatus.textContent = `玩家 ${currentPlayer} 的回合`;
+            debugInfo.textContent = `游戏状态: 进行中 ｜ 模式: ${isSinglePlayerMode ? '人机对战‘ : ’双人模式} | 当前玩家: ${currentplayer}`;
+
+            if (isSinglePlayerMode && gameActive && currentPlayer === 'O'){
+                setTimeout(handleComputerMove, 700);
         }
 
         // --- Minimax AI 逻辑 ---
@@ -585,11 +583,16 @@
 
         // 处理电脑移动（Minimax AI）
         function handleComputerMove() {
-            if (!gameActive) return;
+            if (!gameActive || currentPlayer !== 'O'){
+                debugInfo.textContent = 游戏状态: ${gameActive ? `进行中` : `已结束`} | 模式: 人机对战 | 当前玩家: ${currentPlayer} | 电脑移动: 跳过`；
+                return;
+            }
 
             const bestMove = minimax(board, 'O'); // 计算最佳移动
             const computerMoveIndex = bestMove.index;
             const computerCell = document.querySelector(`.cell[data-index="${computerMoveIndex}"]`);
+
+            debugInfo.textContent = `游戏状态: 进行中 | 模式: 人机对战 | 当前玩家: ${currentPlayer} | 电脑移动: ${computerMoveIndex}`;
             
             updateCell(computerCell, computerMoveIndex);
             checkGameStatus();
@@ -605,6 +608,7 @@
                 gameStatus.textContent = `玩家 ${winner} 赢了!`;
                 gameActive = false; // 游戏结束
                 updateScore(winner); // 更新成绩
+                debugInfo.textContent = `游戏状态: 已结束 | 胜利者: ${winner}`;
                 if (enableAnimations) {
                     if (isSinglePlayerMode && winner === 'O') { // 单人模式下电脑胜利，真人玩家失败
                         showLoseMocking();
@@ -620,16 +624,12 @@
             if (roundDraw) {
                 gameStatus.textContent = `平局!`;
                 gameActive = false;
+                debugInfo.textContent = `游戏状态: 已结束 | 结果: 平局`;
                 return;
             }
 
             // 如果游戏未结束，则切换玩家
             changePlayer();
-
-            // 如果是人机对战模式，并且当前轮到电脑，触发电脑移动
-            if (isSinglePlayerMode && gameActive && currentPlayer === 'O') {
-                setTimeout(handleComputerMove, 700);
-            }
         }
 
         // --- 成绩记录 ---
