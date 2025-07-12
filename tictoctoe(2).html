@@ -457,10 +457,6 @@
             twoPlayersModeBtn.classList.remove('active');
             resetGame();
             gameStatus.textContent = `人機對戰：玩家 ${currentPlayer} 的回合`;
-            if (currentPlayer === 'O') { // 如果电脑是先手
-                setTimeout(handleComputerMove, 700);
-            }
-        });
 
         twoPlayersModeBtn.addEventListener('click', () => {
             isSinglePlayerMode = false;
@@ -479,6 +475,11 @@
 
             // 如果单元格已被占用或游戏未激活，则不执行任何操作
             if (board[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            // 在人机模式下，只有真人玩家才能点击操作
+            if (board[clickedCellIndex]!== '' ||!gameActive(isSinglePlayerMode === 'O')){
                 return;
             }
 
