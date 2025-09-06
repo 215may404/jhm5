@@ -5,503 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>角鬥士棋 - 策略版圖遊戲</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: #333;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background-color: #2c3e50;
-            color: white;
-            position: relative;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            flex-grow: 1;
-            text-align: center;
-        }
-
-        .rules-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: absolute;
-            right: 20px;
-        }
-
-        .rules-btn:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .screen {
-            display: none;
-            padding: 20px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .screen.active {
-            display: flex;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .welcome-content {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .welcome-content h2 {
-            margin-bottom: 30px;
-            color: #2c3e50;
-            font-size: 2.2rem;
-        }
-
-        .game-mode-selection {
-            margin-top: 30px;
-        }
-
-        .game-mode-selection h3 {
-            margin-bottom: 20px;
-            color: #34985e;
-        }
-
-        .mode-buttons {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .mode-btn {
-            background: linear-gradient(to right, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 20px 40px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: all 0.3s;
-            width: 200px;
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-        }
-
-        .mode-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .mode-btn:nth-child(2) { /* Two-player */
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-        }
-
-        .mode-btn:nth-child(3) { /* Four-player */
-            background: linear-gradient(to right, #e67e22, #d35400);
-        }
-
-        .game-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 20px;
-            flex-grow: 1;
-        }
-
-        .board-container {
-            flex: 2; /* Allow board container to grow more */
-            min-width: 300px;
-            background-color: #ecf0f1;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: fit-content;
-            margin-bottom: 20px;
-        }
-
-        .board {
-            display: grid;
-            border: 2px solid #34495e;
-            background-color: #bdc3c7;
-            max-width: 100%;
-            aspect-ratio: 1;
-            width: 100%;
-        }
-
-        .cell {
-            aspect-ratio: 1;
-            border: 1px solid #7f8c8d;
-            position: relative;
-            background-image: none;
-        }
-
-        .cell.occupied {
-            background-color: #3498db; /* Default color for occupied cells */
-        }
-
-        .cell:hover {
-            background-color: rgba(52, 152, 219, 0.2);
-        }
-        
-        .cell.highlight { /* Valid placement highlight */
-            background-color: rgba(46, 204, 113, 0.5);
-        }
-        
-        .cell.highlight-invalid { /* Invalid placement highlight */
-            background-color: rgba(231, 76, 60, 0.5);
-        }
-
-        .cell.start-point { /* Styling for starting cells */
-            border: 3px solid white;
-            box-shadow: inset 0 0 0 3px black;
-        }
-
-        .game-info {
-            flex: 1; /* Allow game-info to take remaining space */
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            min-width: 280px;
-        }
-
-        .players-info {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .player {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border-left: 5px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .player.active {
-            background-color: #f8f9fa;
-            border-left-color: currentColor;
-            transform: scale(1.02);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .player-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            margin-right: 12px;
-        }
-
-        .player-name {
-            flex: 1;
-            font-weight: bold;
-        }
-
-        .player-score, .player-pieces {
-            margin-left: 10px;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .game-controls {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .current-player {
-            margin-bottom: 15px;
-            font-weight: bold;
-            text-align: center;
-            font-size: 1.2rem;
-            padding: 10px;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-        }
-
-        .control-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-
-        .control-btn:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-
-        #restart-btn {
-            background-color: #e74c3c;
-        }
-
-        #restart-btn:hover {
-            background-color: #c0392b;
-        }
-
-        #save-btn {
-            background-color: #2ecc71;
-        }
-
-        #save-btn:hover {
-            background-color: #27ae60;
-        }
-
-        #quit-btn {
-            background-color: #7f8c8d;
-        }
-
-        #quit-btn:hover {
-            background-color: #636e72;
-        }
-
-        .pieces-container {
-            margin-top: 20px;
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-        }
-
-        .pieces-container h3 {
-            margin-bottom: 15px;
-            color: #34495e;
-        }
-
-        .pieces-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .piece {
-            border: 2px solid #ccc;
-            border-radius: 5px;
-            cursor: grab;
-            transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 5px;
-            background-color: #f0f0f0;
-            user-select: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .piece:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .piece.dragging {
-            opacity: 0.7;
-            transform: scale(1.1);
-        }
-
-        .piece-grid {
-            display: grid;
-            border: 1px solid #aaa;
-            background-color: #eee;
-            margin-top: 5px;
-        }
-
-        .piece-grid-cell {
-            width: 15px;
-            height: 15px;
-            border: 1px solid #ccc;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            animation: fadeIn 0.3s ease;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 80%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .close {
-            color: #aaa;
-            position: absolute;
-            right: 20px;
-            top: 15px;
-            font-size: 32px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .close:hover {
-            color: #e74c3c;
-        }
-
-        #rules-content h3 {
-            margin: 20px 0 10px;
-            color: #2c3e50;
-            font-size: 1.5rem;
-        }
-
-        #rules-content p, #rules-content ul {
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-
-        #rules-content ul {
-            margin-left: 25px;
-        }
-
-        #rules-content li {
-            margin-bottom: 8px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .modal-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        #resume-yes {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-            color: white;
-        }
-
-        #resume-yes:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        #resume-no {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
-            color: white;
-        }
-
-        #resume-no:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: white;
-            background-color: #2c3e50;
-            margin-top: 20px;
-            border-radius: 0 0 15px 15px;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); color: #333; line-height: 1.6; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: rgba(255, 255, 255, 0.95); border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); overflow: hidden; display: flex; flex-direction: column; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #2c3e50; color: white; position: relative; }
+        h1 { font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); flex-grow: 1; text-align: center; }
+        .rules-btn { background-color: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 50px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); position: absolute; right: 20px; }
+        .rules-btn:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); }
+        .screen { display: none; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+        .screen.active { display: flex; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .welcome-content { text-align: center; padding: 40px 20px; }
+        .welcome-content h2 { margin-bottom: 30px; color: #2c3e50; font-size: 2.2rem; }
+        .game-mode-selection { margin-top: 30px; }
+        .game-mode-selection h3 { margin-bottom: 20px; color: #34985e; }
+        .mode-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 30px; }
+        .mode-btn { background: linear-gradient(to right, #3498db, #2980b9); color: white; border: none; padding: 20px 40px; border-radius: 10px; cursor: pointer; font-size: 1.2rem; font-weight: bold; transition: all 0.3s; width: 200px; box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); }
+        .mode-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); }
+        .mode-btn:nth-child(2) { background: linear-gradient(to right, #2ecc71, #27ae60); } /* Two-player */
+        .mode-btn:nth-child(3) { background: linear-gradient(to right, #e67e22, #d35400); } /* Four-player */
+        .game-container { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; flex-grow: 1; }
+        .board-container { flex: 2; min-width: 300px; background-color: #ecf0f1; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; align-items: center; height: fit-content; margin-bottom: 20px; }
+        .board { display: grid; border: 2px solid #34495e; background-color: #bdc3c7; max-width: 100%; aspect-ratio: 1; width: 100%; }
+        .cell { aspect-ratio: 1; border: 1px solid #7f8c8d; position: relative; background-image: none; }
+        .cell.occupied { background-color: #3498db; }
+        .cell:hover { background-color: rgba(52, 152, 219, 0.2); }
+        .cell.highlight { background-color: rgba(46, 204, 113, 0.5); }
+        .cell.highlight-invalid { background-color: rgba(231, 76, 60, 0.5); }
+        .cell.start-point { border: 3px solid white; box-shadow: inset 0 0 0 3px black; }
+        .game-info { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 280px; }
+        .players-info { background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .player { display: flex; align-items: center; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid transparent; transition: all 0.3s; }
+        .player.active { background-color: #f8f9fa; border-left-color: currentColor; transform: scale(1.02); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .player-color { width: 24px; height: 24px; border-radius: 50%; margin-right: 12px; }
+        .player-name { flex: 1; font-weight: bold; }
+        .player-score, .player-pieces { margin-left: 10px; font-size: 0.9rem; color: #666; }
+        .game-controls { background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .current-player { margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 1.2rem; padding: 10px; border-radius: 8px; background-color: #f8f9fa; }
+        .control-btn { display: block; width: 100%; padding: 12px; margin-bottom: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
+        .control-btn:hover { background-color: #2980b9; transform: translateY(-2px); }
+        #restart-btn { background-color: #e74c3c; }
+        #restart-btn:hover { background-color: #c0392b; }
+        #save-btn { background-color: #2ecc71; }
+        #save-btn:hover { background-color: #27ae60; }
+        #quit-btn { background-color: #7f8c8d; }
+        #quit-btn:hover { background-color: #636e72; }
+        .pieces-container { margin-top: 20px; background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; }
+        .pieces-container h3 { margin-bottom: 15px; color: #34495e; }
+        .pieces-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .piece { border: 2px solid #ccc; border-radius: 5px; cursor: grab; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); padding: 5px; background-color: #f0f0f0; user-select: none; display: flex; flex-direction: column; align-items: center; }
+        .piece:hover { transform: scale(1.05); box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); }
+        .piece.dragging { opacity: 0.7; transform: scale(1.1); }
+        .piece-grid { display: grid; border: 1px solid #aaa; background-color: #eee; margin-top: 5px; }
+        .piece-grid-cell { width: 15px; height: 15px; border: 1px solid #ccc; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); animation: fadeIn 0.3s ease; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 15px; width: 80%; max-width: 700px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); }
+        .close { color: #aaa; position: absolute; right: 20px; top: 15px; font-size: 32px; font-weight: bold; cursor: pointer; transition: color 0.3s; }
+        .close:hover { color: #e74c3c; }
+        #rules-content h3 { margin: 20px 0 10px; color: #2c3e50; font-size: 1.5rem; }
+        #rules-content p, #rules-content ul { margin-bottom: 15px; line-height: 1.6; }
+        #rules-content ul { margin-left: 25px; }
+        #rules-content li { margin-bottom: 8px; }
+        .modal-buttons { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
+        .modal-btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; transition: all 0.3s; }
+        #resume-yes { background: linear-gradient(to right, #2ecc71, #27ae60); color: white; }
+        #resume-yes:hover { transform: translateY(-3px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); }
+        #resume-no { background: linear-gradient(to right, #e74c3c, #c0392b); color: white; }
+        #resume-no:hover { transform: translateY(-3px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); }
+        .footer { text-align: center; padding: 20px; color: white; background-color: #2c3e50; margin-top: 20px; border-radius: 0 0 15px 15px; }
         @media (max-width: 768px) {
-            .game-container {
-                flex-direction: column;
-            }
-            
-            .game-info {
-                flex: 1;
-                width: 100%;
-            }
-            
-            .mode-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-            }
-
-            .mode-btn {
-                width: 100%;
-            }
-            
-            .piece-grid-cell {
-                width: 12px;
-                height: 12px;
-            }
+            .game-container { flex-direction: column; }
+            .game-info { flex: 1; width: 100%; }
+            .mode-buttons { flex-direction: column; align-items: center; }
+            .modal-content { width: 95%; margin: 10% auto; }
+            .mode-btn { width: 100%; }
+            .piece-grid-cell { width: 12px; height: 12px; }
         }
     </style>
 </head>
@@ -611,41 +189,25 @@
 
     <script>
         let gameState = {};
-        let draggedPieceData = null; // Stores index, rotation, flip, and original shape for the piece being dragged
+        let draggedPieceData = null;
 
         // 21 standard Blokus pieces
         const PIECE_SHAPES = [
-            [[1]], // 1
-            [[1, 1]], // 2
-            [[1, 1, 1]], // 3-straight
-            [[1, 1], [0, 1]], // 3-L
-            [[1, 1, 1, 1]], // 4-straight
-            [[1, 1], [1, 1]], // 4-square
-            [[1, 1, 1], [0, 1, 0]], // 4-T
-            [[1, 0], [1, 1], [1, 0]], // 4-Z (or S)
-            [[1, 0, 0], [1, 1, 1]], // 4-L
-            [[1, 1, 1, 1, 1]], // 5-straight
-            [[1, 1, 1], [1, 0, 1]], // 5-cross
-            [[1, 1, 0], [0, 1, 1], [0, 0, 1]], // 5-zigzag
-            [[0, 1, 1], [1, 1, 0], [1, 0, 0]], // 5-other-zigzag
-            [[1, 1, 1], [0, 1, 0], [0, 1, 0]], // 5-F
-            [[1, 1, 1], [1, 0, 0], [1, 0, 0]], // 5-L
-            [[0, 1, 1, 1], [1, 1, 0, 0]], // 5-N
-            [[1, 0, 1], [1, 1, 1]], // 5-P
-            [[1, 1, 1], [0, 0, 1], [0, 0, 1]], // 5-Y
-            [[1, 1, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]], // 5-I (long)
-            [[1, 0, 0, 0], [1, 1, 1, 1]], // 5-U
-            [[0, 1, 0], [1, 1, 1], [0, 1, 0]]  // 5-X (center piece)
+            [[1]], [[1, 1]], [[1, 1, 1]], [[1, 1], [0, 1]], [[1, 1, 1, 1]],
+            [[1, 1], [1, 1]], [[1, 1, 1], [0, 1, 0]], [[1, 0], [1, 1], [1, 0]], [[1, 0, 0], [1, 1, 1]],
+            [[1, 1, 1, 1, 1]], [[1, 1, 1], [1, 0, 1]], [[1, 1, 0], [0, 1, 1], [0, 0, 1]], [[0, 1, 1], [1, 1, 0], [1, 0, 0]],
+            [[1, 1, 1], [0, 1, 0], [0, 1, 0]], [[1, 1, 1], [1, 0, 0], [1, 0, 0]], [[0, 1, 1, 1], [1, 1, 0, 0]],
+            [[1, 0, 1], [1, 1, 1]], [[1, 1, 1], [0, 0, 1], [0, 0, 1]], [[1, 1, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]],
+            [[1, 0, 0, 0], [1, 1, 1, 1]], [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
         ];
 
-        const BOARD_SIZE = 25; // Larger board size
-        const PLAYER_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f']; // Red, Blue, Green, Yellow
+        const BOARD_SIZE = 25;
+        const PLAYER_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f'];
         const START_POINTS = [
             [0, 0], [0, BOARD_SIZE - 1], [BOARD_SIZE - 1, 0], [BOARD_SIZE - 1, BOARD_SIZE - 1]
         ];
 
         // --- Initialization and Event Listeners ---
-
         function initGame() {
             setupEventListeners();
             checkSavedGame();
@@ -661,7 +223,6 @@
             document.getElementById('restart-btn').addEventListener('click', handleRestartGame);
             document.getElementById('save-btn').addEventListener('click', handleSaveGame);
             document.getElementById('end-turn-btn').addEventListener('click', endTurn);
-
             document.addEventListener('keydown', handleKeyPress);
             window.addEventListener('click', handleOutsideModalClick);
         }
@@ -673,7 +234,6 @@
         }
 
         // --- Game Mode and State Management ---
-
         function handleModeSelection(e) {
             const mode = e.target.getAttribute('data-mode');
             startGame(mode);
@@ -727,18 +287,21 @@
             });
             gameState.isFirstMove = false;
 
+            // **--- KEY CHANGE HERE ---**
+            // Hide welcome screen and show game screen
             document.getElementById('welcome-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
+            // **-----------------------**
+
             renderGame();
         }
 
         // --- Rendering Functions ---
-
         function renderGame() {
             renderBoard();
             renderPlayerInfo();
             renderPieces();
-            checkForGameEnd(); // Check game end conditions after rendering
+            checkForGameEnd();
         }
 
         function renderBoard() {
@@ -810,12 +373,7 @@
                     pieceElement.draggable = true;
                     pieceElement.dataset.pieceIndex = index;
                     
-                    draggedPieceData = {
-                        index: index,
-                        originalShape: piece.shape,
-                        rotation: 0,
-                        flip: false
-                    };
+                    draggedPieceData = { index: index, originalShape: piece.shape, rotation: 0, flip: false };
                     
                     const transformedShape = applyTransforms(draggedPieceData.originalShape, draggedPieceData.rotation, draggedPieceData.flip);
                     
@@ -828,39 +386,25 @@
                         row.forEach(cell => {
                             const gridCell = document.createElement('div');
                             gridCell.className = 'piece-grid-cell';
-                            if (cell === 1) {
-                                gridCell.style.backgroundColor = gameState.players[gameState.currentPlayer].color;
-                            }
+                            if (cell === 1) { gridCell.style.backgroundColor = gameState.players[gameState.currentPlayer].color; }
                             pieceGrid.appendChild(gridCell);
                         });
                     });
-                    
                     pieceElement.appendChild(pieceGrid);
-                    
                     pieceElement.addEventListener('dragstart', handleDragStart);
                     pieceElement.addEventListener('dragend', handleDragEnd);
-                    
                     piecesList.appendChild(pieceElement);
                 }
             });
         }
 
         // --- Piece Transformation ---
-
         function applyTransforms(shape, rotation, flip) {
             let tempShape = JSON.parse(JSON.stringify(shape));
-            
             if (tempShape.length === 0 || tempShape[0].length === 0) return [];
-
-            if (flip) {
-                tempShape = tempShape.reverse();
-            }
-            
+            if (flip) { tempShape = tempShape.reverse(); }
             let rotationCount = rotation / 90;
-            for (let i = 0; i < rotationCount; i++) {
-                tempShape = rotateShape90Clockwise(tempShape);
-            }
-            
+            for (let i = 0; i < rotationCount; i++) { tempShape = rotateShape90Clockwise(tempShape); }
             return tempShape;
         }
 
@@ -868,120 +412,74 @@
             const rows = shape.length;
             const cols = shape[0].length;
             const newShape = Array(cols).fill(0).map(() => Array(rows).fill(0));
-            
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-                    newShape[x][rows - 1 - y] = shape[y][x];
-                }
-            }
+            for (let y = 0; y < rows; y++) { for (let x = 0; x < cols; x++) { newShape[x][rows - 1 - y] = shape[y][x]; } }
             return newShape;
         }
 
         // --- Drag and Drop Handlers ---
-
         function handleDragStart(e) {
             const pieceElement = e.target.closest('.piece');
             if (!pieceElement) return;
-
             const pieceIndex = parseInt(pieceElement.dataset.pieceIndex);
             const originalShape = gameState.availablePieces[gameState.currentPlayer][pieceIndex].shape;
-            
-            draggedPieceData = {
-                index: pieceIndex,
-                originalShape: originalShape,
-                rotation: 0,
-                flip: false
-            };
-
+            draggedPieceData = { index: pieceIndex, originalShape: originalShape, rotation: 0, flip: false };
             e.dataTransfer.setData('application/json', JSON.stringify(draggedPieceData));
             pieceElement.classList.add('dragging');
-            
             highlightValidCells(draggedPieceData.originalShape, draggedPieceData.rotation, draggedPieceData.flip);
         }
-
         function handleDragEnd(e) {
             const pieceElement = e.target.closest('.piece');
-            if (pieceElement) {
-                pieceElement.classList.remove('dragging');
-            }
+            if (pieceElement) { pieceElement.classList.remove('dragging'); }
             removeHighlightCells();
             draggedPieceData = null;
         }
-
         function handleDragOver(e) {
             e.preventDefault();
             const targetCell = e.target.closest('.cell');
             if (!targetCell) return;
-
             const x = parseInt(targetCell.dataset.x);
             const y = parseInt(targetCell.dataset.y);
-            
             removeHighlightCells();
-
             if (!draggedPieceData) return;
-
             const transformedShape = applyTransforms(draggedPieceData.originalShape, draggedPieceData.rotation, draggedPieceData.flip);
-            
             highlightValidCells(draggedPieceData.originalShape, draggedPieceData.rotation, draggedPieceData.flip);
-
-            if (isValidPlacement(transformedShape, x, y)) {
-                highlightPlacement(transformedShape, x, y, 'highlight');
-            } else {
-                highlightPlacement(transformedShape, x, y, 'highlight-invalid');
-            }
+            if (isValidPlacement(transformedShape, x, y)) { highlightPlacement(transformedShape, x, y, 'highlight'); }
+            else { highlightPlacement(transformedShape, x, y, 'highlight-invalid'); }
         }
-
         function handleDrop(e) {
             e.preventDefault();
             const targetCell = e.target.closest('.cell');
             if (!targetCell) return;
-
             const x = parseInt(targetCell.dataset.x);
             const y = parseInt(targetCell.dataset.y);
-            
             let data;
-            try {
-                data = JSON.parse(e.dataTransfer.getData('application/json'));
-            } catch (error) {
-                console.error("Failed to parse drag data:", error);
-                return;
-            }
-
+            try { data = JSON.parse(e.dataTransfer.getData('application/json')); }
+            catch (error) { console.error("Failed to parse drag data:", error); return; }
             const { index, originalShape, rotation, flip } = data;
             const transformedShape = applyTransforms(originalShape, rotation, flip);
-
             if (isValidPlacement(transformedShape, x, y)) {
                 placePiece(transformedShape, x, y);
-                
                 const piece = gameState.availablePieces[gameState.currentPlayer][index];
                 piece.used = true;
                 const pieceSize = getPieceSize(transformedShape);
                 gameState.players[gameState.currentPlayer].piecesPlaced += pieceSize;
                 gameState.players[gameState.currentPlayer].score += pieceSize;
-                
                 if (getRemainingPieceCount() === 0) {
                     gameState.players[gameState.currentPlayer].score += 15;
-                    if (pieceSize === 1) {
-                        gameState.players[gameState.currentPlayer].score += 5;
-                    }
+                    if (pieceSize === 1) { gameState.players[gameState.currentPlayer].score += 5; }
                 }
-                
                 endTurn();
-            } else {
-                alert('無效的放置位置！請確保棋子與您的棋子角對角相鄰，且不與您的棋子邊對邊相鄰。');
-            }
+            } else { alert('無效的放置位置！請確保棋子與您的棋子角對角相鄰，且不與您的棋子邊對邊相鄰。'); }
             removeHighlightCells();
             draggedPieceData = null;
         }
 
         // --- Placement Validation ---
-
         function isValidPlacement(shape, startX, startY) {
             const currentPlayerId = gameState.currentPlayer + 1;
             let touchOwnCorner = false;
             let touchOwnEdge = false;
             let touchesStartPoint = false;
-
             const isFirstGameMove = gameState.isFirstMove;
             const startPoints = START_POINTS.slice(0, gameState.players.length);
             const playerStartPoint = startPoints[gameState.currentPlayer];
@@ -994,55 +492,34 @@
                         const boardX = startX + x;
                         const boardY = startY + y;
                         
-                        if (boardX < 0 || boardX >= BOARD_SIZE || boardY < 0 || boardY >= BOARD_SIZE) {
-                            return false;
-                        }
+                        if (boardX < 0 || boardX >= BOARD_SIZE || boardY < 0 || boardY >= BOARD_SIZE) { return false; }
+                        if (gameState.board[boardY][boardX] !== 0) { return false; }
+                        if (isFirstGameMove && playerStartPoint && playerStartPoint[0] === boardX && playerStartPoint[1] === boardY) { touchesStartPoint = true; }
                         
-                        if (gameState.board[boardY][boardX] !== 0) {
-                            return false;
-                        }
-
-                        if (isFirstGameMove && playerStartPoint && playerStartPoint[0] === boardX && playerStartPoint[1] === boardY) {
-                            touchesStartPoint = true;
-                        }
-                        
-                        const neighbors = [
-                            {dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: -1, dy: 0}, {dx: 1, dy: 0}
-                        ];
-                        const diagonalNeighbors = [
-                            {dx: -1, dy: -1}, {dx: -1, dy: 1}, {dx: 1, dy: -1}, {dx: 1, dy: 1}
-                        ];
+                        const neighbors = [{dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: -1, dy: 0}, {dx: 1, dy: 0}];
+                        const diagonalNeighbors = [{dx: -1, dy: -1}, {dx: -1, dy: 1}, {dx: 1, dy: -1}, {dx: 1, dy: 1}];
 
                         for (const n of neighbors) {
                             const nx = boardX + n.dx;
                             const ny = boardY + n.dy;
                             if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
-                                if (gameState.board[ny][nx] === currentPlayerId) {
-                                    touchOwnEdge = true;
-                                }
+                                if (gameState.board[ny][nx] === currentPlayerId) { touchOwnEdge = true; }
                             }
                         }
-
                         for (const d of diagonalNeighbors) {
                             const dx = boardX + d.dx;
                             const dy = boardY + d.dy;
                             if (dx >= 0 && dx < BOARD_SIZE && dy >= 0 && dy < BOARD_SIZE) {
-                                if (gameState.board[dy][dx] === currentPlayerId) {
-                                    touchOwnCorner = true;
-                                }
+                                if (gameState.board[dy][dx] === currentPlayerId) { touchOwnCorner = true; }
                             }
                         }
                     }
                 }
             }
             
-            if (isFirstGameMove) {
-                return touchesStartPoint;
-            } else {
-                return touchOwnCorner && !touchOwnEdge;
-            }
+            if (isFirstGameMove) { return touchesStartPoint; }
+            else { return touchOwnCorner && !touchOwnEdge; }
         }
-        
         function placePiece(shape, startX, startY) {
             const playerId = gameState.currentPlayer + 1;
             for (let y = 0; y < shape.length; y++) {
@@ -1057,22 +534,14 @@
                 }
             }
         }
-        
-        function getPieceSize(shape) {
-            return shape.flat().filter(cell => cell === 1).length;
-        }
-        
+        function getPieceSize(shape) { return shape.flat().filter(cell => cell === 1).length; }
         function getRemainingPieceCount() {
             const currentPlayerIndex = gameState.currentPlayer;
             return gameState.availablePieces[currentPlayerIndex].filter(p => !p.used).length;
         }
-        
         function canPlayerPlaceAnyPiece(playerId) {
             const playerPieces = gameState.availablePieces[playerId];
-            if (playerPieces.filter(p => !p.used).length === 0) {
-                return false; // No pieces left
-            }
-
+            if (playerPieces.filter(p => !p.used).length === 0) { return false; }
             for (let i = 0; i < playerPieces.length; i++) {
                 if (!playerPieces[i].used) {
                     const originalShape = playerPieces[i].shape;
@@ -1081,22 +550,18 @@
                             const transformedShape = applyTransforms(originalShape, rotation, flip);
                             for (let y = 0; y < BOARD_SIZE; y++) {
                                 for (let x = 0; x < BOARD_SIZE; x++) {
-                                    if (isValidPlacement(transformedShape, x, y)) {
-                                        return true; // Found at least one valid placement
-                                    }
+                                    if (isValidPlacement(transformedShape, x, y)) { return true; }
                                 }
                             }
                         }
                     }
                 }
             }
-            return false; // No valid placement found for any remaining piece
+            return false;
         }
 
         // --- Turn Management and Game End Checks ---
-
         function endTurn() {
-            // Update isFirstMove flag
             if (gameState.isFirstMove) {
                 const currentPlayerPiecesPlaced = gameState.players[gameState.currentPlayer].piecesPlaced;
                 if (currentPlayerPiecesPlaced > 0) {
@@ -1107,27 +572,22 @@
                             break;
                         }
                     }
-                    if (hasAnyPlayerMadeFirstMove) {
-                        gameState.isFirstMove = false;
-                    }
+                    if (hasAnyPlayerMadeFirstMove) { gameState.isFirstMove = false; }
                 }
             }
 
-            // Move to next player
             gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
 
-            // Check for AI turn
             if (gameState.mode === 'ai' && gameState.currentPlayer === 1) {
                 setTimeout(computerMove, 800);
             }
             
-            renderGame(); // Re-render to show updated player turn and board
+            renderGame();
         }
 
         function checkForGameEnd() {
             const playerCount = gameState.players.length;
             const playersUnableToMove = [];
-            let potentialWinner = null; // For 4-player special win condition
 
             for (let i = 0; i < playerCount; i++) {
                 if (getRemainingPieceCountForPlayer(i) > 0 && !canPlayerPlaceAnyPiece(i)) {
@@ -1135,39 +595,37 @@
                 }
             }
 
-            // Handle game end based on player count and rules
-            if (playerCount === 2 || playerCount === 3) { // Includes AI mode as 2 players
-                if (playersUnableToMove.length === 1) { // One player cannot move
-                    const unablePlayerIndex = playersUnableToMove[0];
-                    if (unablePlayerIndex === gameState.currentPlayer) { // The current player is the one who cannot move
-                        // The opponent wins
-                        const winner = gameState.players.find(p => p.id !== unablePlayerIndex);
-                        endGame(winner, `玩家 ${unablePlayerIndex + 1} 無法放置任何棋子，${winner.name} 獲勝！`);
+            if (playerCount === 2 || playerCount === 3) {
+                if (playersUnableToMove.length >= 1) { // If at least one player cannot move
+                    const currentUnmovablePlayerIndex = playersUnableToMove.find(pIdx => pIdx === gameState.currentPlayer);
+                    if (currentUnmovablePlayerIndex !== undefined) {
+                         // The current player cannot move. Find the opponent.
+                        const winner = gameState.players.find(p => p.id !== currentUnmovablePlayerIndex);
+                        endGame(winner, `玩家 ${currentUnmovablePlayerIndex + 1} 無法放置任何棋子，${winner.name} 獲勝！`);
                         return;
-                    } else { // Another player was unable to move in a previous turn (shouldn't happen if turn ends immediately)
-                        // This scenario might need careful handling if turns are skipped without ending the game.
-                        // For now, we assume immediate game end if a player cannot move.
                     }
-                } else if (playersUnableToMove.length === playerCount) { // All players cannot move
+                    // If an *earlier* player couldn't move, it should have ended the game then.
+                    // If all players can't move, it will be caught below.
+                }
+                // Check if all players are unable to move
+                if (playersUnableToMove.length === playerCount) {
                     endGame(getScores());
                     return;
                 }
             } else if (playerCount === 4) {
-                if (playersUnableToMove.length === 3) { // Three players cannot move
-                    // Find the one player who can still move
+                if (playersUnableToMove.length === 3) {
                     const remainingPlayerIndex = gameState.players.findIndex((p, idx) => !playersUnableToMove.includes(idx));
                     if (remainingPlayerIndex !== -1) {
                         const winner = gameState.players[remainingPlayerIndex];
                         endGame(winner, `${winner.name} 是唯一能繼續放置棋子的玩家，獲勝！`);
                         return;
                     }
-                } else if (playersUnableToMove.length === playerCount) { // All players cannot move
+                } else if (playersUnableToMove.length === playerCount) {
                     endGame(getScores());
                     return;
                 }
             }
             
-            // Standard game end: no pieces left for any player
             const totalPiecesLeft = gameState.players.reduce((sum, p, idx) => sum + getRemainingPieceCountForPlayer(idx), 0);
             if (totalPiecesLeft === 0) {
                 endGame(getScores());
@@ -1180,7 +638,6 @@
         
         function computerMove() {
             const availablePieces = gameState.availablePieces[1].filter(piece => !piece.used);
-            
             if (availablePieces.length === 0 || !canPlayerPlaceAnyPiece(1)) {
                 alert('電腦無法放置任何棋子。');
                 endTurn();
@@ -1195,25 +652,19 @@
                 for (let rotation = 0; rotation < 360; rotation += 90) {
                     for (let flip of [false, true]) {
                         const transformedShape = applyTransforms(originalShape, rotation, flip);
-                        
                         for (let y = 0; y < BOARD_SIZE; y++) {
                             for (let x = 0; x < BOARD_SIZE; x++) {
                                 if (isValidPlacement(transformedShape, x, y)) {
                                     placePiece(transformedShape, x, y);
-                                    
                                     const aiPiece = gameState.availablePieces[1][pieceIndex];
                                     aiPiece.used = true;
                                     const pieceSize = getPieceSize(transformedShape);
                                     gameState.players[1].piecesPlaced += pieceSize;
                                     gameState.players[1].score += pieceSize;
-                                    
                                     if (getRemainingPieceCount() === 0) {
                                         gameState.players[1].score += 15;
-                                        if (pieceSize === 1) {
-                                            gameState.players[1].score += 5;
-                                        }
+                                        if (pieceSize === 1) { gameState.players[1].score += 5; }
                                     }
-                                    
                                     endTurn();
                                     return;
                                 }
@@ -1222,78 +673,60 @@
                     }
                 }
             }
-            
             alert('電腦嘗試了所有可能，但無法放置任何棋子。');
             endTurn();
         }
 
         // --- Save/Load and Game Flow ---
-
         function saveGame() {
             localStorage.setItem('glokus_saved_game', JSON.stringify(gameState));
             alert('遊戲已儲存！');
         }
-
         function handleResumeGame() {
             const savedGame = JSON.parse(localStorage.getItem('glokus_saved_game'));
             if (savedGame) {
                 gameState = savedGame;
                 hideModal('resume-modal');
+                // **--- KEY CHANGE HERE ---**
                 document.getElementById('welcome-screen').classList.remove('active');
                 document.getElementById('game-screen').classList.add('active');
+                // **-----------------------**
                 renderGame();
             }
         }
-
         function handleNewGameFromResume() {
             localStorage.removeItem('glokus_saved_game');
             hideModal('resume-modal');
         }
-
         function handleRestartGame() {
             if (confirm('確定要重新開始遊戲嗎？當前進度將會丢失。')) {
                 startGame(gameState.mode);
             }
         }
-
         function handleQuitGame() {
             if (confirm('確定要離開當前遊戲嗎？未保存的進度將會丢失。')) {
                 localStorage.removeItem('glokus_saved_game');
+                // **--- KEY CHANGE HERE ---**
                 document.getElementById('game-screen').classList.remove('active');
                 document.getElementById('welcome-screen').classList.add('active');
+                // **-----------------------**
             }
         }
 
         // --- Modals and UI Helpers ---
-
-        function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
-
-        function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function hideAllModals() {
-            document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
-        }
-
+        function showModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function hideModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+        function hideAllModals() { document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none'); }
         function handleOutsideModalClick(e) {
             document.querySelectorAll('.modal').forEach(modal => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
+                if (e.target === modal) { modal.style.display = 'none'; }
             });
         }
-
         function handleKeyPress(e) {
             if (!draggedPieceData) return;
-
             const pieceElement = document.querySelector('.piece.dragging');
             if (!pieceElement) return;
-
             let needsRedraw = false;
-
             if (e.key === 'r' || e.key === 'R') {
                 draggedPieceData.rotation = (draggedPieceData.rotation + 90) % 360;
                 needsRedraw = true;
@@ -1302,101 +735,74 @@
                 draggedPieceData.flip = !draggedPieceData.flip;
                 needsRedraw = true;
             }
-
             if (needsRedraw) {
                 updateDraggedPieceVisuals(pieceElement, draggedPieceData);
                 removeHighlightCells();
                 highlightValidCells(draggedPieceData.originalShape, draggedPieceData.rotation, draggedPieceData.flip);
             }
         }
-
         function updateDraggedPieceVisuals(pieceElement, data) {
             const transformedShape = applyTransforms(data.originalShape, data.rotation, data.flip);
             const pieceGrid = pieceElement.querySelector('.piece-grid');
             if (!pieceGrid) return;
-
             pieceGrid.innerHTML = '';
             pieceGrid.style.gridTemplateColumns = `repeat(${transformedShape[0] ? transformedShape[0].length : 0}, 1fr)`;
             pieceGrid.style.gridTemplateRows = `repeat(${transformedShape.length}, 1fr)`;
-
             transformedShape.forEach(row => {
                 row.forEach(cell => {
                     const gridCell = document.createElement('div');
                     gridCell.className = 'piece-grid-cell';
-                    if (cell === 1) {
-                        gridCell.style.backgroundColor = gameState.players[gameState.currentPlayer].color;
-                    }
+                    if (cell === 1) { gridCell.style.backgroundColor = gameState.players[gameState.currentPlayer].color; }
                     pieceGrid.appendChild(gridCell);
                 });
             });
         }
-
         function highlightValidCells(shape, rotation, flip) {
             const transformedShape = applyTransforms(shape, rotation, flip);
             const boardCells = document.querySelectorAll('.cell');
-
             boardCells.forEach(cell => {
                 const x = parseInt(cell.dataset.x);
                 const y = parseInt(cell.dataset.y);
-                
-                if (isValidPlacement(transformedShape, x, y)) {
-                    highlightPlacement(transformedShape, x, y, 'highlight');
-                }
+                if (isValidPlacement(transformedShape, x, y)) { highlightPlacement(transformedShape, x, y, 'highlight'); }
             });
         }
-        
         function highlightPlacement(shape, startX, startY, className) {
             for (let y = 0; y < shape.length; y++) {
                 for (let x = 0; x < shape[y].length; x++) {
                     if (shape[y][x] === 1) {
                         const cell = document.querySelector(`.cell[data-x='${startX + x}'][data-y='${startY + y}']`);
-                        if (cell) {
-                            cell.classList.add(className);
-                        }
+                        if (cell) { cell.classList.add(className); }
                     }
                 }
             }
         }
-
         function removeHighlightCells() {
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.classList.remove('highlight', 'highlight-invalid');
             });
         }
-        
+
         // --- Game End Handling ---
-        
         function endGame(winnerOrScores, message = null) {
+            // **--- KEY CHANGE HERE ---**
+            // Hide game screen and show welcome screen
             document.getElementById('game-screen').classList.remove('active');
             document.getElementById('welcome-screen').classList.add('active');
+            // **-----------------------**
             
             let finalMessage = "遊戲結束！";
-            if (message) {
-                finalMessage += ` ${message}`;
-            } else if (Array.isArray(winnerOrScores)) { // If scores object is passed
+            if (message) { finalMessage += ` ${message}`; }
+            else if (Array.isArray(winnerOrScores)) {
                 finalMessage += "\n最終得分：\n";
-                winnerOrScores.sort((a, b) => b.score - a.score); // Sort by score descending
-                winnerOrScores.forEach(player => {
-                    finalMessage += `${player.name} (${player.color}): ${player.score} 分\n`;
-                });
-            } else if (winnerOrScores) { // Single winner
-                finalMessage += ` ${winnerOrScores.name} 獲勝！`;
-            } else { // No winner, draw or other scenario
-                finalMessage += " 雙方平局！";
-            }
+                winnerOrScores.sort((a, b) => b.score - a.score);
+                winnerOrScores.forEach(player => { finalMessage += `${player.name} (${player.color}): ${player.score} 分\n`; });
+            } else if (winnerOrScores) { finalMessage += ` ${winnerOrScores.name} 獲勝！`; }
+            else { finalMessage += " 雙方平局！"; }
 
             alert(finalMessage);
-            
-            // Reset for new game
-            localStorage.removeItem('glokus_saved_game'); 
-            // Optionally, clear board and pieces state here if needed for immediate restart without going to welcome screen
+            localStorage.removeItem('glokus_saved_game');
         }
-
-        function getScores() {
-            // Calculate final scores if needed, or return players array for display
-            // For now, just return player info for score display.
-            return gameState.players.map(p => ({ name: p.name, color: p.color, score: p.score }));
-        }
+        function getScores() { return gameState.players.map(p => ({ name: p.name, color: p.color, score: p.score })); }
         
         // --- Initialize ---
         document.addEventListener('DOMContentLoaded', initGame);
