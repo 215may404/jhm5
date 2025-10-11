@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSE 成績分析器 (2024)</title>
+    <title>DSE 成績分析器</title>
     <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
-
-    <header>
-        <h1>DSE 2024 成績分析</h1>
-        <p>請輸入您的 DSE 成績，以 2024 年數據為分析基準。</p>
-    </header>
-
     <main>
         <form id="dseForm">
             <section id="required-subjects">
@@ -25,23 +19,50 @@
                         <option value="5*">5*</option>
                         <option value="5">5</option>
                         <option value="4">4</option>
+                        <option value="3">3</option>
+                        <option value="2">2</option>
+                        <option value="1">1</option>
+                    </select>
+                </div>
+               <div class="input-group">
+                    <label for="eng">英國語文：</label>
+                    <select id="eng" name="eng" required>
+                        <option value="">請選擇</option>
+                        <option value="5**">5**</option>
+                        <option value="5*">5*</option>
+                        <option value="5">5</option>
+                        <option value="4">4</option>
+                        <option value="3">3</option>
+                        <option value="2">2</option>
                         <option value="1">1</option>
                     </select>
                 </div>
                 <div class="input-group">
-    <label for="csl">公民與社會發展科：</label>
-    <select id="csl" name="csl" required>
-        <option value="">請選擇</option>
-        <option value="A">達標 (Attained)</option>
-        <option value="U">不達標 (Unattained)</option>
-    </select>
-</div>
+                    <label for="math">數學：</label>
+                    <select id="math" name="math" required>
+                        <option value="">請選擇</option>
+                        <option value="5**">5**</option>
+                        <option value="5*">5*</option>
+                        <option value="5">5</option>
+                        <option value="4">4</option>
+                        <option value="3">3</option>
+                        <option value="2">2</option>
+                        <option value="1">1</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="csd">公民與社會發展科：</label>
+                    <select id="csd" name="csd" required>
+                        <option value="">請選擇</option>
+                        <option value="A">達標 (Attained)</option>
+                        <option value="U">不達標 (Unattained)</option>
+                    </select>
+                    </div>
             </section>
 
             <section id="elective-subjects">
                 <h2>第二部分：選修科目 (Electives) (選填)</h2>
                 <div id="electives-container">
-                    <p>點擊下方按鈕新增選修科目。</p>
                 </div>
                 <button type="button" id="add-elective-btn">新增選修科</button>
             </section>
@@ -60,7 +81,7 @@
 
     <footer>
         <button id="reset-btn">重新輸入</button>
-        <a href="https://www.student.hk/dse-info" target="_blank" class="footer-btn">學友社 DSE 資訊</a>
+        <a href="https://www.hyc.org.hk/" target="_blank" class="footer-btn">學友社 DSE 資訊</a>
         <a href="https://www.jupas.edu.hk/" target="_blank" class="footer-btn">JUPAS 官方網站</a>
     </footer>
 
