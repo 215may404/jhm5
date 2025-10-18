@@ -264,6 +264,9 @@
                     </div>
 
                 <p id="feedback" style="text-align: center; margin-top: 10px; min-height: 24px;"></p>
+                <div style="margin-top: 12px;">
+                    <button id="quit-btn" style="background:#dc3545;color:white;border:none;padding:10px 14px;border-radius:6px;cursor:pointer;">退出游戏</button>
+                </div>
             </div>
 
             <div id="result-screen" style="display: none;">
@@ -291,20 +294,18 @@
     </footer>
 
     <script>
-        // *** 保持原有的遊戲邏輯 (generateQuestion, handleAnswer, startGame, gameOver, launchConfetti 等) 不變 ***
-        
-        // 為了簡潔，這裡省略了與上一個回答中相同的完整 JS 邏輯代碼。
-        // 請確保您使用上一個回答中的完整 JavaScript 程式碼。
 
         const GAME_DURATION = 60;
-        let maxNumber = 50;
-        let timePerQuestion = 8;
-        let score = 0;
+    let maxNumber = 50;
+    let timePerQuestion = 8;
+    let score = 0;
         let totalTimeElapsed = 0;
         let questionStartTime = 0;
         let gameInterval;
         let questionTimeout;
-        let stats = { total: 0, correct: 0, reactionTimes: [] };
+    let stats = { total: 0, correct: 0, reactionTimes: [] };
+    // 当前连续答对计数（用于连胜加成）
+    let currentStreak = 0;
         let currentQuestion = { num1: 0, num2: 0, op: '', answer: 0, options: [] };
         const elements = {
             startScreen: document.getElementById('start-screen'),
@@ -315,6 +316,7 @@
             questionArea: document.getElementById('question-area'),
             optionsArea: document.getElementById('options-area'),
             feedback: document.getElementById('feedback'),
+            quitButton: document.getElementById('quit-btn'),
             statTotal: document.getElementById('stat-total'),
             statCorrect: document.getElementById('stat-correct'),
             difficultySelect: document.getElementById('difficulty'),
@@ -348,15 +350,20 @@
                 // 清除禮炮
                 if (elements.confettiContainer) elements.confettiContainer.innerHTML = '';
                 // 重置遊戲內部狀態（可選）
-                window.score = 0;
-                window.stats = { total: 0, correct: 0, reactionTimes: [] };
+                score = 0;
+                stats = { total: 0, correct: 0, reactionTimes: [] };
             });
         }
         const CONFETTI_COLORS = ['#f8b195', '#f67280', '#c06c84', '#6c5b7b', '#355c7d'];
 
         function launchConfetti(count = 50, duration = 1000) {
             if (!elements.confettiContainer) return;
-            const box = elements.gameScreen.getBoundingClientRect();
+            // 如果 gameScreen 此时被隐藏（display:none），getBoundingClientRect 会返回 0 宽高。
+            // 优先使用 gameScreen 的边界作为礼炮起点；若无效则 fallback 到 confettiContainer 或整页。
+            let box = elements.gameScreen && elements.gameScreen.getBoundingClientRect && elements.gameScreen.getBoundingClientRect();
+            if (!box || (box.width === 0 && box.height === 0)) {
+                box = elements.confettiContainer.getBoundingClientRect() || document.body.getBoundingClientRect();
+            }
             const centerX = box.left + box.width / 2;
             const centerY = box.top + box.height / 2;
             for (let i = 0; i < count; i++) {
@@ -372,6 +379,10 @@
                 piece.style.setProperty('--x', `${x}px`);
                 piece.style.setProperty('--y', `${y}px`);
                 piece.style.setProperty('--rot', `${rot}deg`);
+                // 使动画时长与传入 duration 同步（CSS 中使用的秒数）
+                piece.style.animationDuration = `${Math.max(0.5, duration / 1000)}s`;
+                // 增加少量随机延迟，让礼炮更自然
+                piece.style.animationDelay = `${Math.random() * 0.3}s`;
                 elements.confettiContainer.appendChild(piece);
             }
             setTimeout(() => { elements.confettiContainer.innerHTML = ''; }, duration + 500);
@@ -382,9 +393,49 @@
                 audioElement.play().catch(e => console.error("Audio playback failed:", e));
             }
         }
-        function generateQuestion() { /* ... 略 ... */ }
-        function generateOptions(correctAnswer) { /* ... 略 ... */ }
-        function renderOptions() { /* ... 略 ... */ }
+        function generateQuestion() { 
+            const operations = ['+', '-', '*'];
+            const op = operations[Math.floor(Math.random() * operations.length)];
+            let num1, num2, answer;
+            if (op === '+') {
+                num1 = Math.floor(Math.random() * maxNumber) + 1;
+                num2 = Math.floor(Math.random() * maxNumber) + 1;
+                answer = num1 + num2;
+            } else if (op === '-') {
+                num1 = Math.floor(Math.random() * maxNumber) + 1;
+                num2 = Math.floor(Math.random() * num1) + 1; 
+                answer = num1 - num2;
+            } else if (op === '*') {
+                num1 = Math.floor(Math.random() * (maxNumber / 2)) + 1; 
+                num2 = Math.floor(Math.random() * (maxNumber / 2)) + 1; 
+                answer = num1 * num2;
+            }
+            currentQuestion = { num1, num2, op, answer };
+            elements.questionArea.textContent = `${num1} ${op} ${num2} = ?`;
+            currentQuestion.options = generateOptions(answer);
+            renderOptions();
+            questionStartTime = Date.now();
+         }
+        function generateOptions(correctAnswer) {
+            const options = new Set();
+            options.add(correctAnswer);
+            while (options.size < 4) {
+                let delta = Math.floor(Math.random() * 10) + 1;
+                if (Math.random() < 0.5) delta = -delta;
+                options.add(correctAnswer + delta);
+            }
+            return Array.from(options).sort(() => Math.random() - 0.5);
+         }
+        function renderOptions() {  
+            elements.optionsArea.innerHTML = '';
+            currentQuestion.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.addEventListener('click', () => handleAnswer(option));
+                elements.optionsArea.appendChild(btn);
+            });
+        }
         
         function handleAnswer(selectedAnswer) {
             clearTimeout(questionTimeout);
@@ -393,15 +444,22 @@
             stats.reactionTimes.push(reactionTime);
             let isCorrect = (selectedAnswer === currentQuestion.answer);
             if (isCorrect) {
-                score += Math.max(1, Math.round(timePerQuestion - reactionTime));
+                // 连续答对计数
+                currentStreak++;
+                // 基础得分 10 分，若为连胜则每次额外加成 2 分（从第二次开始）
+                const streakBonus = currentStreak > 1 ? 2 * (currentStreak - 1) : 0;
+                const points = 10 + streakBonus;
+                score += points;
                 stats.correct++;
-                elements.feedback.textContent = '✅ 正確！';
+                elements.feedback.textContent = `✅ 正確！ +${points} 分`;
                 elements.questionArea.classList.add('correct-feedback');
                 playSound(elements.correctSound);
                 launchConfetti(20, 500);
             } else {
-                score = Math.max(0, score - 5); 
-                elements.feedback.textContent = `❌ 錯誤！正確答案是 ${currentQuestion.answer}`;
+                // 答錯重置连胜并扣分
+                currentStreak = 0;
+                score = Math.max(0, score - 5);
+                elements.feedback.textContent = `❌ 錯誤！正確答案是 ${currentQuestion.answer} (-5 分)`;
                 elements.questionArea.classList.add('incorrect-feedback');
             }
             elements.scoreDisplay.textContent = score;
@@ -409,10 +467,45 @@
             setTimeout(() => { elements.feedback.textContent = ''; elements.questionArea.className = ''; nextQuestion(); }, 800);
         }
         
-        function handleTimeout() { /* ... 略 ... */ }
-        function updateGameTimer() { /* ... 略 ... */ }
-        function nextQuestion() { /* ... 略 ... */ }
-        function updateStatsDisplay() { /* ... 略 ... */ }
+        function handleTimeout() {
+            stats.total++;
+            // 超時視為答錯：重置连胜並扣分
+            currentStreak = 0;
+            score = Math.max(0, score - 5);
+            elements.feedback.textContent = `⌛ 超時！正確答案是 ${currentQuestion.answer} (-5 分)`;
+            elements.questionArea.classList.add('incorrect-feedback');
+            elements.scoreDisplay.textContent = score;
+            updateStatsDisplay();
+            setTimeout(() => { elements.feedback.textContent = ''; elements.questionArea.className = ''; nextQuestion(); }, 800);
+         }
+        function updateGameTimer() { 
+            totalTimeElapsed -= 0.1;
+            if (totalTimeElapsed <= 0) {
+                elements.timerDisplay.textContent = '0.0';
+                gameOver();
+            } else {
+                elements.timerDisplay.textContent = totalTimeElapsed.toFixed(1);
+            }
+        }
+        function nextQuestion() {
+            if (totalTimeElapsed <= 0) {
+                gameOver();
+                return;
+            }
+            clearTimeout(questionTimeout);
+            questionTimeout = setTimeout(handleTimeout, timePerQuestion * 1000);
+            generateQuestion();
+         }
+        function updateStatsDisplay() { 
+            if (elements.statTotal) elements.statTotal.textContent = stats.total;
+            if (elements.statCorrect) elements.statCorrect.textContent = stats.correct;
+            // 以下統計欄位在 UI 中未必都有顯示，先做存在性檢查再更新
+            if (elements.statIncorrect) elements.statIncorrect.textContent = stats.total - stats.correct;
+            if (elements.statAverage) elements.statAverage.textContent = stats.reactionTimes.length > 0 ? (stats.reactionTimes.reduce((a, b) => a + b, 0) / stats.reactionTimes.length).toFixed(2) : '0.00';
+            if (elements.statBestTime) elements.statBestTime.textContent = stats.reactionTimes.length > 0 ? Math.min(...stats.reactionTimes).toFixed(2) : '0.00';
+            if (elements.statWorstTime) elements.statWorstTime.textContent = stats.reactionTimes.length > 0 ? Math.max(...stats.reactionTimes).toFixed(2) : '0.00';
+            if (elements.statLastTime) elements.statLastTime.textContent = stats.reactionTimes.length > 0 ? stats.reactionTimes[stats.reactionTimes.length - 1].toFixed(2) : '0.00';
+        }
         
         function startGame() {
              const difficulty = elements.difficultySelect.value;
@@ -420,6 +513,7 @@
             else if (difficulty === 'medium') { maxNumber = 50; timePerQuestion = 8; } 
             else if (difficulty === 'hard') { maxNumber = 100; timePerQuestion = 5; }
             score = 0;
+            currentStreak = 0;
             totalTimeElapsed = GAME_DURATION;
             stats = { total: 0, correct: 0, reactionTimes: [] };
             elements.startScreen.style.display = 'none';
@@ -455,26 +549,32 @@
             elements.startScreen.style.display = 'block';
         });
 
+        // 退出功能：停止游戏并返回开始画面
+        function quitGame() {
+            clearInterval(gameInterval);
+            clearTimeout(questionTimeout);
+            // 清空界面状态
+            elements.gameScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'none';
+            elements.startScreen.style.display = 'block';
+            elements.feedback.textContent = '';
+            elements.optionsArea.innerHTML = '';
+            elements.scoreDisplay.textContent = '0';
+            if (elements.confettiContainer) elements.confettiContainer.innerHTML = '';
+            // 重置内部状态
+            score = 0;
+            currentStreak = 0;
+            stats = { total: 0, correct: 0, reactionTimes: [] };
+        }
+
+        if (elements.quitButton) {
+            elements.quitButton.addEventListener('click', quitGame);
+        }
+
         window.onload = () => {
             elements.startScreen.style.display = 'block';
         };
-        
-        // 補齊缺失的核心函數
-        function generateQuestion() { /* 保持上一個回答中的邏輯 */ }
-        function generateOptions(correctAnswer) { /* 保持上一個回答中的邏輯 */ }
-        function renderOptions() { /* 保持上一個回答中的邏輯 */ }
-        function handleTimeout() { /* 保持上一個回答中的邏輯 */ }
-        function updateGameTimer() { /* 保持上一個回答中的邏輯 */ }
-        function nextQuestion() {
-            if (totalTimeElapsed <= 0) {
-                gameOver();
-                return;
-            }
-            clearTimeout(questionTimeout);
-            questionTimeout = setTimeout(handleTimeout, timePerQuestion * 1000);
-            generateQuestion();
-        }
-        function updateStatsDisplay() { /* 保持上一個回答中的邏輯 */ }
     </script>
 </body>
 </html>
+
