@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學反應挑戰 - Math Reaction Challenge</title>
+    <style>
+        /* R1(2) - 清晰的界面設計 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* 調整為從頂部開始，手機響應式更好 */
+            padding: 20px;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            transition: all 0.3s ease;
+        }
+
+        /* R1(2) - 分數計時區 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        /* R1(2) - 題目顯示區 */
+        #question-area {
+            font-size: 2.5em;
+            text-align: center;
+            margin: 30px 0;
+            padding: 15px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            min-height: 50px; /* 確保高度一致 */
+        }
+        
+        /* R1(2) - 答案選項區 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .option-btn:hover {
+            background-color: #ced4da;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        #start-btn, #restart-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        /* 視覺效果 (R4-16) */
+        .correct-feedback {
+            color: #28a745;
+            animation: flashGreen 0.3s ease;
+        }
+
+        .incorrect-feedback {
+            color: #dc3545;
+            animation: flashRed 0.3s ease;
+        }
+        
+        @keyframes flashGreen {
+            0% { background-color: white; }
+            50% { background-color: #d4edda; }
+            100% { background-color: white; }
+        }
+        
+        @keyframes flashRed {
+            0% { background-color: white; }
+            50% { background-color: #f8d7da; }
+            100% { background-color: white; }
+        }
+
+        /* 遊戲結束結果顯示 (R4-14) */
+        #result-screen {
+            text-align: center;
+            padding: 20px;
+        }
+
+        #result-screen h2 {
+            color: #007bff;
+        }
+
+        /* R1(3) - 頁尾 */
+        footer {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: auto; /* 推到最底部 */
+        }
+        
+        /* R5(17) - 響應式設計 */
+        @media (max-width: 600px) {
+            .options-grid {
+                grid-template-columns: 1fr; /* 手機上單列顯示 */
+            }
+            .game-container {
+                margin: 10px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>數學反應挑戰</h1>
+    </header>
+
+    <main>
+        <div class="game-container">
+            
+            <div class="status-bar">
+                <div>分數: <span id="score">0</span></div>
+                <div>時間: <span id="timer">10.0</span>s</div>
+            </div>
+
+            <div id="start-screen">
+                <h2>歡迎來到數學反應挑戰！</h2>
+                <p>規則：快速計算題目並選擇正確答案。答對得分，答錯或超時扣分。</p>
+                <p>目標：在限定時間（例如1分鐘）內獲得最高分數。</p>
+                <div style="margin: 15px 0;">
+                    <label for="difficulty">難度:</label>
+                    <select id="difficulty">
+                        <option value="easy">簡單 (1-10)</option>
+                        <option value="medium" selected>中等 (1-50)</option>
+                        <option value="hard">困難 (1-100)</option>
+                    </select>
+                </div>
+                <button id="start-btn">開始挑戰</button>
+            </div>
+            
+            <div id="game-screen" style="display: none;">
+                <div id="question-area">? + ? = ?</div>
+    
+                <div class="options-grid" id="options-area">
+                    </div>
+
+                <p id="feedback" style="text-align: center; margin-top: 10px; min-height: 24px;"></p>
+            </div>
+
+            <div id="result-screen" style="display: none;">
+                <h2 id="final-message">挑戰結束！</h2>
+                <p>最終分數: <span id="final-score">0</span></p>
+                <p>答題總數: <span id="total-questions">0</span></p>
+                <p>正確率: <span id="accuracy">0%</span></p>
+                <p>平均反應時間: <span id="avg-time">0.00</span> 秒</p>
+                <button id="restart-btn">重新挑戰</button>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 0.9em;">
+                <p>總答題數: <span id="stat-total">0</span> | 正確數: <span id="stat-correct">0</span></p>
+                </div>
+            
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 數學反應挑戰. All Rights Reserved. 設計者: Gemini AI</p>
+    </footer>
+
+    <script>
+        // R5(19) - 數據變數/屬性管理遊戲狀態
+        const GAME_DURATION = 60; // 總遊戲時間 (秒)
+        let maxNumber = 10;      // 數字範圍上限 (隨難度變化)
+        let timePerQuestion = 10; // 每題最大答題時間 (秒)
+        
+        let score = 0;
+        let totalTimeElapsed = 0; // 總計時器（倒數）
+        let questionStartTime = 0; // 單題開始時間戳
+        
+        let gameInterval; // 總計時器 Interval ID
+        let questionTimeout; // 單題計時器 Timeout ID
+        
+        let stats = {
+            total: 0,
+            correct: 0,
+            reactionTimes: []
+        };
+        
+        let currentQuestion = {
+            num1: 0,
+            num2: 0,
+            op: '',
+            answer: 0,
+            options: []
+        };
+
+        const elements = {
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            scoreDisplay: document.getElementById('score'),
+            timerDisplay: document.getElementById('timer'),
+            questionArea: document.getElementById('question-area'),
+            optionsArea: document.getElementById('options-area'),
+            feedback: document.getElementById('feedback'),
+            statTotal: document.getElementById('stat-total'),
+            statCorrect: document.getElementById('stat-correct'),
+            difficultySelect: document.getElementById('difficulty'),
+            finalMessage: document.getElementById('final-message'),
+            finalScore: document.getElementById('final-score'),
+            totalQuestions: document.getElementById('total-questions'),
+            accuracy: document.getElementById('accuracy'),
+            avgTime: document.getElementById('avg-time'),
+            startButton: document.getElementById('start-btn'),
+            restartButton: document.getElementById('restart-btn')
+        };
+        
+        // 數學運算生成 (R2-4, R5-18)
+        function generateQuestion() {
+            const ops = ['+', '-', '*', '/'];
+            const op = ops[Math.floor(Math.random() * ops.length)]; // 隨機運算符
+            let num1, num2, answer;
+            
+            // 根據難度設定數字範圍
+            const range = maxNumber;
+
+            // 確保除法是整除，且減法結果非負
+            do {
+                num1 = Math.floor(Math.random() * range) + 1;
+                num2 = Math.floor(Math.random() * range) + 1;
+                
+                if (op === '+') {
+                    answer = num1 + num2;
+                } else if (op === '-') {
+                    // 確保結果非負
+                    if (num1 < num2) [num1, num2] = [num2, num1]; // 交換
+                    answer = num1 - num2;
+                } else if (op === '*') {
+                    answer = num1 * num2;
+                } else if (op === '/') {
+                    // 確保整除
+                    const product = num1 * num2;
+                    num1 = product;
+                    answer = num2; // num2 是答案
+                    num2 = Math.floor(Math.random() * (range - 1)) + 1; // 隨機一個除數
+                    if (num1 % num2 !== 0) { // 如果不整除，則重算
+                        answer = null; 
+                    } else {
+                        answer = num1 / num2;
+                    }
+                }
+            } while (answer === null || answer <= 0 || answer > range * 2); // 限制答案範圍
+            
+            currentQuestion = { num1, num2, op, answer };
+            
+            // 隨機生成選項 (R2-5)
+            generateOptions(answer);
+            
+            elements.questionArea.textContent = `${num1} ${op} ${num2} = ?`;
+            questionStartTime = Date.now(); // 記錄單題開始時間
+        }
+        
+        // 生成選項 (R2-5)
+        function generateOptions(correctAnswer) {
+            const options = new Set();
+            options.add(correctAnswer);
+            
+            // 嘗試生成 3 個錯誤選項
+            while (options.size < 4) {
+                let error = correctAnswer + Math.floor(Math.random() * 10) * (Math.random() > 0.5 ? 1 : -1);
+                // 確保錯誤選項不等於正確答案，且不小於 0
+                if (error !== correctAnswer && error >= 0) {
+                    options.add(error);
+                }
+            }
+            
+            currentQuestion.options = Array.from(options).sort(() => Math.random() - 0.5); // 隨機排序
+            
+            renderOptions();
+        }
+        
+        // 渲染選項
+        function renderOptions() {
+            elements.optionsArea.innerHTML = '';
+            currentQuestion.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.addEventListener('click', () => handleAnswer(option));
+                elements.optionsArea.appendChild(btn);
+            });
+        }
+        
+        // 處理玩家答案 (R2-7)
+        function handleAnswer(selectedAnswer) {
+            clearTimeout(questionTimeout); // 停止單題計時
+            const reactionTime = (Date.now() - questionStartTime) / 1000;
+            
+            stats.total++;
+            stats.reactionTimes.push(reactionTime);
+
+            let isCorrect = (selectedAnswer === currentQuestion.answer);
+
+            if (isCorrect) {
+                // R2(7) - 答對得分
+                score += Math.max(1, Math.round(timePerQuestion - reactionTime)); // 快速答題獎勵分數
+                stats.correct++;
+                elements.feedback.textContent = '✅ 正確！';
+                elements.questionArea.classList.add('correct-feedback'); // R4(16) 視覺效果
+                // 播放音效 (如果能實施的話，這裡只用視覺)
+            } else {
+                // R2(7) - 答錯扣分
+                score = Math.max(0, score - 5); 
+                elements.feedback.textContent = `❌ 錯誤！正確答案是 ${currentQuestion.answer}`;
+                elements.questionArea.classList.add('incorrect-feedback'); // R4(16) 視覺效果
+            }
+            
+            elements.scoreDisplay.textContent = score;
+            updateStatsDisplay();
+            
+            // 延遲一段時間後進入下一題
+            setTimeout(() => {
+                elements.feedback.textContent = '';
+                elements.questionArea.className = ''; // 清除回饋視覺效果
+                nextQuestion();
+            }, 800);
+        }
+        
+        // 超時處理
+        function handleTimeout() {
+            stats.total++;
+            score = Math.max(0, score - 10); // R2(7) - 超時扣更多分
+            elements.scoreDisplay.textContent = score;
+            elements.feedback.textContent = `⏳ 超時！正確答案是 ${currentQuestion.answer}`;
+            elements.questionArea.classList.add('incorrect-feedback');
+            updateStatsDisplay();
+
+            setTimeout(() => {
+                elements.feedback.textContent = '';
+                elements.questionArea.className = '';
+                nextQuestion();
+            }, 800);
+        }
+        
+        // 總計時器更新
+        function updateGameTimer() {
+            totalTimeElapsed -= 0.1;
+            elements.timerDisplay.textContent = totalTimeElapsed.toFixed(1);
+            
+            if (totalTimeElapsed <= 0) {
+                totalTimeElapsed = 0;
+                elements.timerDisplay.textContent = '0.0';
+                gameOver(); // R2-9
+            }
+        }
+        
+        // 進入下一題 (R2-4, R2-6)
+        function nextQuestion() {
+            if (totalTimeElapsed <= 0) {
+                gameOver();
+                return;
+            }
+
+            // R2(6) - 題目計時器
+            clearTimeout(questionTimeout);
+            questionTimeout = setTimeout(handleTimeout, timePerQuestion * 1000);
+
+            // R2(4) - 生成新題目
+            generateQuestion();
+            
+            // R2(4) - 難度增加 (這裡簡化為時間縮短)
+            // if (stats.total % 5 === 0 && timePerQuestion > 4) {
+            //     timePerQuestion -= 0.5;
+            // }
+        }
+        
+        // 更新統計數據 (R2-8)
+        function updateStatsDisplay() {
+            elements.statTotal.textContent = stats.total;
+            elements.statCorrect.textContent = stats.correct;
+            // R4-14 - 其他統計數據會在遊戲結束時計算
+        }
+        
+        // 遊戲開始
+        function startGame() {
+            // 設置難度 (R6-22)
+            const difficulty = elements.difficultySelect.value;
+            if (difficulty === 'easy') {
+                maxNumber = 10;
+                timePerQuestion = 10;
+            } else if (difficulty === 'medium') {
+                maxNumber = 50;
+                timePerQuestion = 8;
+            } else if (difficulty === 'hard') {
+                maxNumber = 100;
+                timePerQuestion = 5;
+            }
+
+            score = 0;
+            totalTimeElapsed = GAME_DURATION;
+            stats = { total: 0, correct: 0, reactionTimes: [] };
+
+            elements.startScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'none';
+            elements.gameScreen.style.display = 'block';
+            elements.scoreDisplay.textContent = score;
+            
+            // R2(6) - 總計時器開始倒數
+            gameInterval = setInterval(updateGameTimer, 100); 
+
+            updateStatsDisplay();
+            nextQuestion();
+        }
+        
+        // 遊戲結束 (R2-9, R4-14, R5-20)
+        function gameOver() {
+            clearInterval(gameInterval);
+            clearTimeout(questionTimeout);
+
+            elements.gameScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'block';
+
+            // 計算最終數據 (R4-14)
+            const accuracy = stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : 0.0;
+            const avgTime = stats.reactionTimes.length > 0 ? (stats.reactionTimes.reduce((a, b) => a + b, 0) / stats.reactionTimes.length).toFixed(2) : '0.00';
+            
+            elements.finalScore.textContent = score;
+            elements.totalQuestions.textContent = stats.total;
+            elements.accuracy.textContent = `${accuracy}%`;
+            elements.avgTime.textContent = avgTime;
+            
+            // R5(20) - 遊戲結束提醒和詳細成績分析
+            alert(`遊戲結束！您的最終分數是 ${score}！`); 
+            
+            // R4(16) - 遊戲完成視覺效果 (例如，標題變色)
+            elements.finalMessage.textContent = score >= 50 ? '🎉 恭喜！表現出色！' : '挑戰結束！再接再厲！';
+        }
+
+        // 事件監聽 (R4-15)
+        elements.startButton.addEventListener('click', startGame);
+        elements.restartButton.addEventListener('click', () => {
+            elements.resultScreen.style.display = 'none';
+            elements.startScreen.style.display = 'block';
+        });
+
+        // 頁面載入時先顯示開始畫面
+        window.onload = () => {
+            elements.startScreen.style.display = 'block';
+        };
+    </script>
+</body>
+</html>
