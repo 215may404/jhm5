@@ -15,6 +15,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow-x: hidden; /* 防止禮炮溢出造成滾動條 */
         }
 
         header {
@@ -29,8 +30,9 @@
             flex-grow: 1;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* 調整為從頂部開始，手機響應式更好 */
+            align-items: flex-start;
             padding: 20px;
+            position: relative; /* 為了禮炮效果定位 */
         }
 
         .game-container {
@@ -41,6 +43,7 @@
             width: 100%;
             max-width: 500px;
             transition: all 0.3s ease;
+            z-index: 10; /* 確保內容在禮炮之上 */
         }
 
         /* R1(2) - 分數計時區 */
@@ -62,7 +65,7 @@
             border: 2px solid #ccc;
             border-radius: 5px;
             background-color: #fff;
-            min-height: 50px; /* 確保高度一致 */
+            min-height: 50px;
         }
         
         /* R1(2) - 答案選項區 */
@@ -142,17 +145,44 @@
             color: white;
             text-align: center;
             padding: 10px 0;
-            margin-top: auto; /* 推到最底部 */
+            margin-top: auto;
+            z-index: 10;
         }
         
         /* R5(17) - 響應式設計 */
         @media (max-width: 600px) {
             .options-grid {
-                grid-template-columns: 1fr; /* 手機上單列顯示 */
+                grid-template-columns: 1fr;
             }
             .game-container {
                 margin: 10px;
                 padding: 20px;
+            }
+        }
+
+        /* ------------------------------------- */
+        /* 禮炮視覺效果 CSS - Confetti Effect CSS */
+        /* ------------------------------------- */
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: var(--color);
+            opacity: 0;
+            animation: fall 3s ease-out forwards;
+            pointer-events: none;
+            transform-origin: 50% 50%;
+            z-index: 5;
+        }
+
+        @keyframes fall {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--x), var(--y)) rotate(var(--rot));
             }
         }
     </style>
@@ -163,7 +193,9 @@
         <h1>數學反應挑戰</h1>
     </header>
 
-    <main>
+    <main id="main-content">
+        <div id="confetti-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+
         <div class="game-container">
             
             <div class="status-bar">
@@ -206,13 +238,17 @@
 
             <div style="margin-top: 20px; font-size: 0.9em;">
                 <p>總答題數: <span id="stat-total">0</span> | 正確數: <span id="stat-correct">0</span></p>
-                </div>
+            </div>
             
         </div>
     </main>
 
+    <audio id="correct-sound" src="https://www.soundjay.com/applause/applause-2.mp3" preload="auto"></audio>
+    <audio id="game-over-sound" src="https://www.soundjay.com/misc/success-fanfare-sound-2.mp3" preload="auto"></audio>
+
+
     <footer>
-        <p>&copy; 2025 數學反應挑戰. All Rights Reserved. 設計者: Gemini AI</p>
+        <p>&copy; 香港浸會大學持續教育學院.高中應用學習課程-資訊科技精要(2024-26學年).單元五（課業六）</p>
     </footer>
 
     <script>
@@ -260,19 +296,73 @@
             accuracy: document.getElementById('accuracy'),
             avgTime: document.getElementById('avg-time'),
             startButton: document.getElementById('start-btn'),
-            restartButton: document.getElementById('restart-btn')
+            restartButton: document.getElementById('restart-btn'),
+            // 新增音效元素
+            correctSound: document.getElementById('correct-sound'),
+            gameOverSound: document.getElementById('game-over-sound'),
+            // 新增禮炮容器
+            confettiContainer: document.getElementById('confetti-container')
         };
+        
+        // --- R16: 禮炮效果函數 ---
+        const CONFETTI_COLORS = ['#f8b195', '#f67280', '#c06c84', '#6c5b7b', '#355c7d'];
+        
+        function launchConfetti(count = 50, duration = 1000) {
+            if (!elements.confettiContainer) return;
+
+            const box = elements.gameScreen.getBoundingClientRect();
+            const centerX = box.left + box.width / 2;
+            const centerY = box.top + box.height / 2;
+
+            for (let i = 0; i < count; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                
+                // 隨機顏色
+                const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+                
+                // 隨機初始位置（從屏幕中心附近發射）
+                piece.style.left = `${centerX + Math.random() * 50 - 25}px`;
+                piece.style.top = `${centerY + Math.random() * 50 - 25}px`;
+                piece.style.setProperty('--color', color);
+                
+                // 隨機下落目標位置和旋轉
+                const x = (Math.random() - 0.5) * 800; // 水平移動距離
+                const y = Math.random() * 600 + 400; // 垂直移動距離
+                const rot = Math.random() * 1080 - 540; // 旋轉角度
+                
+                piece.style.setProperty('--x', `${x}px`);
+                piece.style.setProperty('--y', `${y}px`);
+                piece.style.setProperty('--rot', `${rot}deg`);
+
+                elements.confettiContainer.appendChild(piece);
+            }
+
+            // 清理禮炮
+            setTimeout(() => {
+                elements.confettiContainer.innerHTML = '';
+            }, duration + 500);
+        }
+        
+        // 播放音效輔助函數
+        function playSound(audioElement) {
+            if (audioElement && audioElement.src) {
+                // 確保音效可以重新播放
+                audioElement.currentTime = 0; 
+                audioElement.play().catch(e => console.error("Audio playback failed:", e));
+            }
+        }
+        
+        // --- 核心遊戲邏輯 (與上次相同，只修改 handleAnswer 和 gameOver) ---
         
         // 數學運算生成 (R2-4, R5-18)
         function generateQuestion() {
             const ops = ['+', '-', '*', '/'];
-            const op = ops[Math.floor(Math.random() * ops.length)]; // 隨機運算符
+            const op = ops[Math.floor(Math.random() * ops.length)];
             let num1, num2, answer;
             
-            // 根據難度設定數字範圍
             const range = maxNumber;
 
-            // 確保除法是整除，且減法結果非負
             do {
                 num1 = Math.floor(Math.random() * range) + 1;
                 num2 = Math.floor(Math.random() * range) + 1;
@@ -280,32 +370,29 @@
                 if (op === '+') {
                     answer = num1 + num2;
                 } else if (op === '-') {
-                    // 確保結果非負
-                    if (num1 < num2) [num1, num2] = [num2, num1]; // 交換
+                    if (num1 < num2) [num1, num2] = [num2, num1];
                     answer = num1 - num2;
                 } else if (op === '*') {
                     answer = num1 * num2;
                 } else if (op === '/') {
-                    // 確保整除
                     const product = num1 * num2;
                     num1 = product;
-                    answer = num2; // num2 是答案
-                    num2 = Math.floor(Math.random() * (range - 1)) + 1; // 隨機一個除數
-                    if (num1 % num2 !== 0) { // 如果不整除，則重算
+                    answer = num2; 
+                    num2 = Math.floor(Math.random() * (range - 1)) + 1; 
+                    if (num1 % num2 !== 0) { 
                         answer = null; 
                     } else {
                         answer = num1 / num2;
                     }
                 }
-            } while (answer === null || answer <= 0 || answer > range * 2); // 限制答案範圍
+            } while (answer === null || answer <= 0 || answer > range * 2);
             
             currentQuestion = { num1, num2, op, answer };
             
-            // 隨機生成選項 (R2-5)
             generateOptions(answer);
             
             elements.questionArea.textContent = `${num1} ${op} ${num2} = ?`;
-            questionStartTime = Date.now(); // 記錄單題開始時間
+            questionStartTime = Date.now();
         }
         
         // 生成選項 (R2-5)
@@ -313,16 +400,14 @@
             const options = new Set();
             options.add(correctAnswer);
             
-            // 嘗試生成 3 個錯誤選項
             while (options.size < 4) {
                 let error = correctAnswer + Math.floor(Math.random() * 10) * (Math.random() > 0.5 ? 1 : -1);
-                // 確保錯誤選項不等於正確答案，且不小於 0
                 if (error !== correctAnswer && error >= 0) {
                     options.add(error);
                 }
             }
             
-            currentQuestion.options = Array.from(options).sort(() => Math.random() - 0.5); // 隨機排序
+            currentQuestion.options = Array.from(options).sort(() => Math.random() - 0.5);
             
             renderOptions();
         }
@@ -339,9 +424,9 @@
             });
         }
         
-        // 處理玩家答案 (R2-7)
+        // 處理玩家答案 (R2-7, R16 - 掌聲和視覺效果)
         function handleAnswer(selectedAnswer) {
-            clearTimeout(questionTimeout); // 停止單題計時
+            clearTimeout(questionTimeout);
             const reactionTime = (Date.now() - questionStartTime) / 1000;
             
             stats.total++;
@@ -350,26 +435,28 @@
             let isCorrect = (selectedAnswer === currentQuestion.answer);
 
             if (isCorrect) {
-                // R2(7) - 答對得分
-                score += Math.max(1, Math.round(timePerQuestion - reactionTime)); // 快速答題獎勵分數
+                score += Math.max(1, Math.round(timePerQuestion - reactionTime));
                 stats.correct++;
                 elements.feedback.textContent = '✅ 正確！';
-                elements.questionArea.classList.add('correct-feedback'); // R4(16) 視覺效果
-                // 播放音效 (如果能實施的話，這裡只用視覺)
+                elements.questionArea.classList.add('correct-feedback');
+                
+                // R16: 播放掌聲音效
+                playSound(elements.correctSound);
+                // R16: 觸發小範圍禮炮效果
+                launchConfetti(20, 500);
+
             } else {
-                // R2(7) - 答錯扣分
                 score = Math.max(0, score - 5); 
                 elements.feedback.textContent = `❌ 錯誤！正確答案是 ${currentQuestion.answer}`;
-                elements.questionArea.classList.add('incorrect-feedback'); // R4(16) 視覺效果
+                elements.questionArea.classList.add('incorrect-feedback');
             }
             
             elements.scoreDisplay.textContent = score;
             updateStatsDisplay();
             
-            // 延遲一段時間後進入下一題
             setTimeout(() => {
                 elements.feedback.textContent = '';
-                elements.questionArea.className = ''; // 清除回饋視覺效果
+                elements.questionArea.className = '';
                 nextQuestion();
             }, 800);
         }
@@ -377,7 +464,7 @@
         // 超時處理
         function handleTimeout() {
             stats.total++;
-            score = Math.max(0, score - 10); // R2(7) - 超時扣更多分
+            score = Math.max(0, score - 10);
             elements.scoreDisplay.textContent = score;
             elements.feedback.textContent = `⏳ 超時！正確答案是 ${currentQuestion.answer}`;
             elements.questionArea.classList.add('incorrect-feedback');
@@ -398,7 +485,7 @@
             if (totalTimeElapsed <= 0) {
                 totalTimeElapsed = 0;
                 elements.timerDisplay.textContent = '0.0';
-                gameOver(); // R2-9
+                gameOver();
             }
         }
         
@@ -409,29 +496,19 @@
                 return;
             }
 
-            // R2(6) - 題目計時器
             clearTimeout(questionTimeout);
             questionTimeout = setTimeout(handleTimeout, timePerQuestion * 1000);
-
-            // R2(4) - 生成新題目
             generateQuestion();
-            
-            // R2(4) - 難度增加 (這裡簡化為時間縮短)
-            // if (stats.total % 5 === 0 && timePerQuestion > 4) {
-            //     timePerQuestion -= 0.5;
-            // }
         }
         
         // 更新統計數據 (R2-8)
         function updateStatsDisplay() {
             elements.statTotal.textContent = stats.total;
             elements.statCorrect.textContent = stats.correct;
-            // R4-14 - 其他統計數據會在遊戲結束時計算
         }
         
         // 遊戲開始
         function startGame() {
-            // 設置難度 (R6-22)
             const difficulty = elements.difficultySelect.value;
             if (difficulty === 'easy') {
                 maxNumber = 10;
@@ -453,14 +530,13 @@
             elements.gameScreen.style.display = 'block';
             elements.scoreDisplay.textContent = score;
             
-            // R2(6) - 總計時器開始倒數
             gameInterval = setInterval(updateGameTimer, 100); 
 
             updateStatsDisplay();
             nextQuestion();
         }
         
-        // 遊戲結束 (R2-9, R4-14, R5-20)
+        // 遊戲結束 (R2-9, R4-14, R5-20, R16 - 禮炮效果)
         function gameOver() {
             clearInterval(gameInterval);
             clearTimeout(questionTimeout);
@@ -468,7 +544,6 @@
             elements.gameScreen.style.display = 'none';
             elements.resultScreen.style.display = 'block';
 
-            // 計算最終數據 (R4-14)
             const accuracy = stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : 0.0;
             const avgTime = stats.reactionTimes.length > 0 ? (stats.reactionTimes.reduce((a, b) => a + b, 0) / stats.reactionTimes.length).toFixed(2) : '0.00';
             
@@ -477,10 +552,14 @@
             elements.accuracy.textContent = `${accuracy}%`;
             elements.avgTime.textContent = avgTime;
             
+            // R16: 播放遊戲結束音效
+            playSound(elements.gameOverSound);
+            // R16: 觸發大型禮炮效果
+            launchConfetti(100, 2000);
+
             // R5(20) - 遊戲結束提醒和詳細成績分析
-            alert(`遊戲結束！您的最終分數是 ${score}！`); 
+            alert(`挑戰結束！您的最終分數是 ${score}！`); 
             
-            // R4(16) - 遊戲完成視覺效果 (例如，標題變色)
             elements.finalMessage.textContent = score >= 50 ? '🎉 恭喜！表現出色！' : '挑戰結束！再接再厲！';
         }
 
@@ -498,3 +577,4 @@
     </script>
 </body>
 </html>
+
