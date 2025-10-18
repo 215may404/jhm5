@@ -228,7 +228,7 @@
     </header>
     
     <nav>
-        <a href="index.html">遊戲主頁</a>
+        <a id="home-link" href="index.html">遊戲主頁</a>
         <a href="instructions.html">遊戲說明</a>
     </nav>
 
@@ -287,7 +287,7 @@
 
 
     <footer>
-        <p>&copy; 香港浸會大學持續教育學院.高中應用學習課程-資訊科技精要(2024-26學年).單元五（課業六）</p>
+        <p>&copy; 香港浸會大學持續教育學院.高中應用學習課程-資訊科技精要(2024-26學年).單元五（課業六） </p>
     </footer>
 
     <script>
@@ -329,6 +329,29 @@
             gameOverSound: document.getElementById('game-over-sound'),
             confettiContainer: document.getElementById('confetti-container')
         };
+        // 保證每次點「遊戲主頁」都回到說明與難度選擇畫面
+        const homeLink = document.getElementById('home-link');
+        if (homeLink) {
+            homeLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 停止可能正在進行的遊戲計時與題目 timeout
+                clearInterval(window.gameInterval);
+                clearTimeout(window.questionTimeout);
+                // 隱藏遊戲/結果畫面，顯示開始畫面（含說明與難度選擇）
+                elements.gameScreen.style.display = 'none';
+                elements.resultScreen.style.display = 'none';
+                elements.startScreen.style.display = 'block';
+                // 重置 UI 顯示（選項、回饋、分數）
+                elements.feedback.textContent = '';
+                elements.optionsArea.innerHTML = '';
+                elements.scoreDisplay.textContent = '0';
+                // 清除禮炮
+                if (elements.confettiContainer) elements.confettiContainer.innerHTML = '';
+                // 重置遊戲內部狀態（可選）
+                window.score = 0;
+                window.stats = { total: 0, correct: 0, reactionTimes: [] };
+            });
+        }
         const CONFETTI_COLORS = ['#f8b195', '#f67280', '#c06c84', '#6c5b7b', '#355c7d'];
 
         function launchConfetti(count = 50, duration = 1000) {
